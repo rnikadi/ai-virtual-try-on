@@ -83,8 +83,8 @@ npm run catalog:images -- APP-001 HOM-002    # ...or just some products
 
 - [x] Step 1: Foundation (repo layout, Postgres, migrations, seed catalog)
 - [x] Step 2: Try-on engine (Gemini endpoint, per-category prompts, photo check, mock mode)
-- [ ] Step 3: Stakeholder demo UI
-- [ ] Step 4: Demo polish (errors, cost and latency notes, demo script)
+- [x] Step 3: Stakeholder demo UI (category tabs, per-product photo guidance, before/after slider, recent try-ons)
+- [ ] Step 4: Demo polish: [demo guide and cost notes](docs/DEMO.md) written; prompt tuning against real photos once a Gemini key is set
 
 Product images in `backend/assets/products` are placeholders. Try-on quality depends on them, so run
 `npm run catalog:images` once a Gemini key is set, or drop in real product photos with the same file names.
