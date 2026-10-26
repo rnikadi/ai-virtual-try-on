@@ -1,3 +1,19 @@
+# Local development stack: Postgres, a one-shot migrate/seed job, the API and the Vite dev server.
+#   docker compose up --build      start everything (http://localhost:5173)
+#   docker compose down            stop (add -v to also delete the database)
+# Source folders are bind-mounted, so code changes reload without rebuilding.
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  image: ai-virtual-try-on-dev
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgres://tryon:tryon@db:5432/tryon
+
 services:
   db:
     image: postgres:16
@@ -13,6 +29,47 @@ services:
       test: ["CMD-SHELL", "pg_isready -U tryon"]
       interval: 5s
       retries: 10
+
+  migrate:
+    <<: *app
+    command: sh -c "npm run db:migrate && npm run db:seed"
+    volumes:
+      - ./db:/app/db
+      - ./backend/src:/app/backend/src
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    <<: *app
+    command: npm run dev --workspace backend
+    environment:
+      DATABASE_URL: postgres://tryon:tryon@db:5432/tryon
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./backend/assets:/app/backend/assets
+      - ./backend/uploads:/app/backend/uploads
+      - ./db:/app/db
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    <<: *app
+    command: npm run dev --workspace frontend -- --host 0.0.0.0
+    environment:
+      API_PROXY_TARGET: http://backend:4000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/index.html:/app/frontend/index.html
+      - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
+    depends_on:
+      - backend
 
 volumes:
   tryon-db:

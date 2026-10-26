@@ -7,6 +7,9 @@
     "frontend"
   ],
   "scripts": {
+    "up": "docker compose up --build",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f backend frontend",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:migrate": "npm run migrate --workspace backend",

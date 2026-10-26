@@ -25,12 +25,50 @@ Each category needs a different kind of photo, and gets its own prompt and valid
 
 ## Getting started
 
+### Option A: everything in Docker (recommended)
+
+Requires only Docker Desktop (or Docker Engine with Compose v2.24+).
+
+```bash
+cp .env.example .env          # add GEMINI_API_KEY to use Gemini; leave it empty for mock mode
+docker compose up --build     # first run takes a few minutes
+```
+
+Open http://localhost:5173. Compose starts four services:
+
+| Service | What it does | Port |
+| --- | --- | --- |
+| `db` | PostgreSQL 16, data kept in the `tryon-db` volume | 5432 |
+| `migrate` | Applies migrations and seeds the catalog, then exits | |
+| `backend` | Express API with hot reload | 4000 |
+| `frontend` | Vite dev server with hot reload | 5173 |
+
+Edits under `backend/src`, `frontend/src` and `db/` reload automatically. Rebuild (`docker compose up --build`)
+only after changing dependencies in a `package.json`.
+
+Common commands:
+
+```bash
+docker compose logs -f backend               # follow API logs
+docker compose restart backend               # pick up a changed .env
+docker compose run --rm migrate              # re-run migrations and seeds
+docker compose exec backend npm run catalog:images --workspace backend   # Gemini product photos
+docker compose exec db psql -U tryon         # open a SQL shell
+docker compose down                          # stop
+docker compose down -v                       # stop and delete the database
+```
+
+If port 5432, 4000 or 5173 is already in use on your machine, stop the other process or change the
+left-hand number in the `ports:` entry in `docker-compose.yml`.
+
+### Option B: Node on your machine, Postgres in Docker
+
 Requires Node 22+ and Docker.
 
 ```bash
-cp .env.example .env    # add GEMINI_API_KEY when you have it
+cp .env.example .env
 npm install
-npm run db:up           # start Postgres in Docker
+npm run db:up           # start only Postgres in Docker
 npm run db:migrate      # apply migrations
 npm run db:seed         # load the demo catalog
 npm run dev:backend     # API on http://localhost:4000
