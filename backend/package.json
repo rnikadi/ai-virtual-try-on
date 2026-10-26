@@ -10,8 +10,7 @@
     "migrate": "tsx --env-file-if-exists=../.env src/db/migrate.ts",
     "seed": "tsx --env-file-if-exists=../.env src/db/seed.ts",
     "reset": "tsx --env-file-if-exists=../.env src/db/reset.ts",
-    "tryon": "tsx --env-file-if-exists=../.env src/scripts/tryon.ts",
-    "catalog:images": "tsx --env-file-if-exists=../.env src/scripts/generateProductImages.ts"
+    "tryon": "tsx --env-file-if-exists=../.env src/scripts/tryon.ts"
   },
   "dependencies": {
     "@google/genai": "^2.31.0",

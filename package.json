@@ -18,7 +18,6 @@
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "tryon": "npm run tryon --workspace backend --",
-    "catalog:images": "npm run catalog:images --workspace backend --"
+    "tryon": "npm run tryon --workspace backend --"
   }
 }

@@ -114,3 +114,34 @@ p { margin: 0; }
   .layout.with-panel { grid-template-columns: minmax(0, 1fr); }
   .panel { position: static; order: -1; }
 }
+
+.nav-link { color: var(--ink); text-decoration: none; font-size: 14px; font-weight: 500; }
+.nav-link:hover { text-decoration: underline; }
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+
+.admin { padding-top: 32px; }
+.admin-head { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: end; margin-bottom: 24px; }
+.admin-head h1 { font-size: 28px; }
+.admin-head p { color: var(--muted); margin-top: 6px; max-width: 640px; }
+.admin-group { margin-bottom: 32px; }
+.admin-group h2 { font-size: 18px; margin-bottom: 12px; }
+.admin-row { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
+.admin-image { position: relative; padding: 0; border: 1px dashed var(--line); border-radius: 10px; overflow: hidden; background: #f1eee9; cursor: pointer; align-self: start; aspect-ratio: 1; }
+.admin-image:hover:not(:disabled) { border-color: var(--accent); }
+.admin-image img { width: 100%; height: 100%; object-fit: cover; }
+.badge { position: absolute; top: 8px; left: 8px; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+.badge.ok { background: var(--accent-soft); color: var(--accent); }
+.badge.todo { background: var(--warn-soft); color: var(--warn); }
+.admin-body { display: grid; gap: 10px; align-content: start; }
+.admin-title { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.admin-title h3 { font-size: 16px; }
+.sku { font-size: 12px; color: var(--muted); }
+.prompt { margin: 0; white-space: pre-wrap; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; line-height: 1.5; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; color: var(--ink); }
+.admin-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.admin-actions .button.small { margin-top: 0; }
+.link-button { background: none; border: 0; color: var(--muted); text-decoration: underline; font: inherit; font-size: 14px; cursor: pointer; }
+
+@media (max-width: 600px) {
+  .admin-row { grid-template-columns: 1fr; }
+  .admin-image { width: 160px; }
+}

@@ -4,7 +4,8 @@
 
 1. Put your key in `.env` (`GEMINI_API_KEY=...`) and restart the backend. The badge in the top right
    should read **Live · gemini-3.1-flash-image**, not "Mock mode".
-2. Run `npm run catalog:images` once so the catalog shows realistic product photos instead of placeholders.
+2. Open **Product images** in the top bar, generate a photo for each product from its prompt, and upload it,
+   so the catalog shows realistic products instead of placeholders.
 3. Prepare one photo per kind of try-on and do a dry run with each, so results are cached in "Recent try-ons":
    - a full-body photo (clothing)
    - a front-facing face photo (glasses, makeup)

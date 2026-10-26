@@ -52,7 +52,6 @@ Common commands:
 docker compose logs -f backend               # follow API logs
 docker compose restart backend               # pick up a changed .env
 docker compose run --rm migrate              # re-run migrations and seeds
-docker compose exec backend npm run catalog:images --workspace backend   # Gemini product photos
 docker compose exec db psql -U tryon         # open a SQL shell
 docker compose down                          # stop
 docker compose down -v                       # stop and delete the database
@@ -94,6 +93,9 @@ in the `schema_migrations` table. To change the schema, add a new numbered file
 | POST | `/api/tryon` | Multipart form with `productId` and `photo`; runs a try-on and returns the session (201 on success, 422 with `errorMessage` on failure) |
 | GET | `/api/tryon/:id` | One try-on session |
 | GET | `/api/tryon?limit=` | Recent try-ons, newest first |
+| GET | `/api/admin/products` | Products with their image prompt |
+| POST | `/api/admin/products/:id/image` | Multipart form with `image`; replaces the product photo |
+| DELETE | `/api/admin/products/:id/image` | Switches the product back to its placeholder |
 
 ## How a try-on works
 
@@ -113,8 +115,6 @@ which mode is active.
 
 ```bash
 npm run tryon -- EYE-001 ~/Pictures/me.jpg   # one try-on from the command line
-npm run catalog:images                       # replace placeholder product images with Gemini-generated photos
-npm run catalog:images -- APP-001 HOM-002    # ...or just some products
 ```
 
 ## Status
@@ -124,5 +124,14 @@ npm run catalog:images -- APP-001 HOM-002    # ...or just some products
 - [x] Step 3: Stakeholder demo UI (category tabs, per-product photo guidance, before/after slider, recent try-ons)
 - [ ] Step 4: Demo polish: [demo guide and cost notes](docs/DEMO.md) written; prompt tuning against real photos once a Gemini key is set
 
-Product images in `backend/assets/products` are placeholders. Try-on quality depends on them, so run
-`npm run catalog:images` once a Gemini key is set, or drop in real product photos with the same file names.
+## Product images
+
+The catalog ships with placeholder images. Try-on quality depends on real product photos, so replace them
+on the **Product images** page (link in the top bar, or http://localhost:5173/#/catalog):
+
+1. Copy a product's prompt (or "Copy all prompts") into your image tool, such as the Gemini app.
+2. Upload the image you get back on the same row, or drag it onto the image.
+
+Uploads are resized to at most 1024 px and stored under `backend/uploads/products`. Re-running the seed
+keeps them. "Use placeholder" switches a product back. The prompts live in
+`backend/src/catalog/imagePrompts.ts`. This page has no login and is meant for local use.

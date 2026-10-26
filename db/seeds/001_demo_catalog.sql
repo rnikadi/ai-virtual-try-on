@@ -1,5 +1,6 @@
 -- Demo catalog: a few products per try-on category.
--- Safe to re-run: existing rows are updated in place.
+-- Safe to re-run: existing rows are updated in place, except image_url, so product
+-- photos uploaded on the catalog page survive a re-seed.
 
 INSERT INTO categories (id, name, description, photo_subject, photo_guidance, sort_order) VALUES
   ('apparel',   'Clothing',               'Tops, dresses, jackets and more, shown on your body.',
@@ -46,5 +47,4 @@ ON CONFLICT (sku) DO UPDATE SET
   brand = EXCLUDED.brand,
   description = EXCLUDED.description,
   price_cents = EXCLUDED.price_cents,
-  image_url = EXCLUDED.image_url,
   attributes = EXCLUDED.attributes;

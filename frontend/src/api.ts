@@ -37,6 +37,19 @@ export interface TryOnSession {
   createdAt: string;
 }
 
+export interface AdminProduct {
+  id: string;
+  categoryId: string;
+  sku: string;
+  name: string;
+  brand: string;
+  description: string;
+  imageUrl: string;
+  attributes: Record<string, unknown>;
+  imagePrompt: string;
+  hasUploadedImage: boolean;
+}
+
 export interface Health {
   status: string;
   tryonMode: "gemini" | "mock";
@@ -58,6 +71,16 @@ export const api = {
   categories: () => getJson<Category[]>("/api/categories"),
   products: () => getJson<Product[]>("/api/products"),
   recentTryOns: (limit = 8) => getJson<TryOnSession[]>(`/api/tryon?limit=${limit}`),
+  adminProducts: () => getJson<AdminProduct[]>("/api/admin/products"),
+  uploadProductImage: (productId: string, image: File) => {
+    const form = new FormData();
+    form.append("image", image);
+    return fetch(`/api/admin/products/${productId}/image`, { method: "POST", body: form }).then((res) =>
+      readJson<AdminProduct>(res),
+    );
+  },
+  resetProductImage: (productId: string) =>
+    fetch(`/api/admin/products/${productId}/image`, { method: "DELETE" }).then((res) => readJson<AdminProduct>(res)),
   /** Resolves with the session for both successful and failed try-ons. */
   tryOn: (productId: string, photo: File) => {
     const form = new FormData();
