@@ -13,6 +13,8 @@ x-app: &app
       required: false
   environment:
     DATABASE_URL: postgres://tryon:tryon@db:5432/tryon
+  networks:
+    - tryon
 
 services:
   db:
@@ -25,6 +27,8 @@ services:
       - "5432:5432"
     volumes:
       - tryon-db:/var/lib/postgresql/data
+    networks:
+      - tryon
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U tryon"]
       interval: 5s
@@ -70,6 +74,11 @@ services:
       - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
     depends_on:
       - backend
+
+# A named network so every service, including a db container left over from
+# `npm run db:up`, resolves the others by service name.
+networks:
+  tryon:
 
 volumes:
   tryon-db:

@@ -1,11 +1,31 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { pool } from "./pool.js";
 import { migrationsDir } from "./paths.js";
+
+const RETRYABLE = new Set(["ENOTFOUND", "EAI_AGAIN", "ECONNREFUSED", "ECONNRESET", "57P03"]);
+
+// Waits up to ~30s for Postgres to accept connections, so a database that is still starting
+// (or a container DNS name that is not registered yet) doesn't fail the migration outright.
+async function waitForDatabase(attempts = 15): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await pool.query("SELECT 1");
+      return;
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      if (!RETRYABLE.has(code) || attempt >= attempts) throw err;
+      console.log(`database not reachable yet (${code}), retrying (${attempt}/${attempts})`);
+      await delay(2000);
+    }
+  }
+}
 
 // Applies every db/migrations/*.sql file not yet recorded in schema_migrations,
 // in filename order, each inside its own transaction.
 export async function migrate(): Promise<void> {
+  await waitForDatabase();
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name TEXT PRIMARY KEY,
