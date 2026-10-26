@@ -1,19 +1,24 @@
-import { Modality } from "@google/genai";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { Router } from "express";
 import multer from "multer";
 import sharp from "sharp";
 import { z } from "zod";
 import { samplePhotoPrompts } from "../catalog/samplePrompts.js";
-import { config, useGemini } from "../config.js";
 import { pool } from "../db/pool.js";
-import { blockReason, gemini } from "../tryon/gemini.js";
+import { assetsDir } from "../paths.js";
 import { saveImage } from "../tryon/storage.js";
 import type { RequiredSubject } from "../tryon/types.js";
 
-// Sample shopper photos: listed for the try-on panel, generated or uploaded on the images page.
+// Sample shopper photos offered in the try-on panel. The defaults ship in backend/assets/samples
+// (made with `npm run demo-images`); one uploaded on the demo images page takes precedence.
 export const samplesRouter = Router();
 
 const subjectParam = z.enum(["full_body", "face", "head_and_shoulders", "hand", "room"]);
+
+function bundledSample(subject: RequiredSubject): string | null {
+  return existsSync(path.join(assetsDir, "samples", `${subject}.jpg`)) ? `/assets/samples/${subject}.jpg` : null;
+}
 
 async function listSamples() {
   const { rows } = await pool.query<{ subject: RequiredSubject; imageUrl: string }>(
@@ -24,7 +29,7 @@ async function listSamples() {
     subject,
     label: samplePhotoPrompts[subject].label,
     prompt: samplePhotoPrompts[subject].prompt,
-    imageUrl: urls.get(subject) ?? null,
+    imageUrl: urls.get(subject) ?? bundledSample(subject),
   }));
 }
 
@@ -45,35 +50,6 @@ async function saveSample(subject: RequiredSubject, input: Buffer) {
 
 samplesRouter.get("/samples", async (_req, res) => {
   res.json(await listSamples());
-});
-
-samplesRouter.post("/admin/samples/:subject/generate", async (req, res) => {
-  const subject = subjectParam.safeParse(req.params.subject);
-  if (!subject.success) {
-    res.status(400).json({ error: "Unknown sample photo" });
-    return;
-  }
-  if (!useGemini) {
-    res.status(409).json({ error: "Add GEMINI_API_KEY to .env and restart the backend to generate images" });
-    return;
-  }
-  const { prompt, aspectRatio } = samplePhotoPrompts[subject.data];
-  try {
-    const result = await gemini().models.generateContent({
-      model: config.GEMINI_IMAGE_MODEL,
-      contents: prompt,
-      config: { responseModalities: [Modality.IMAGE], imageConfig: { aspectRatio } },
-    });
-    const data = result.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)?.inlineData?.data;
-    if (blockReason(result) || !data) {
-      res.status(422).json({ error: "Gemini did not return an image for this prompt. Please try again." });
-      return;
-    }
-    res.json(await saveSample(subject.data, Buffer.from(data, "base64")));
-  } catch (err) {
-    console.error(`generating sample ${subject.data} failed`, err);
-    res.status(502).json({ error: `Gemini request failed: ${(err as Error).message.slice(0, 200)}` });
-  }
 });
 
 const upload = multer({

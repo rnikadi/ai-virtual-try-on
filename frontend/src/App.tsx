@@ -83,7 +83,7 @@ export function App() {
       </header>
 
       {page === "catalog" ? (
-        <CatalogAdmin categories={categories} canGenerate={health?.tryonMode === "gemini"} onChanged={reloadImages} />
+        <CatalogAdmin categories={categories} onChanged={reloadImages} />
       ) : (
         <>
           <section className="hero">

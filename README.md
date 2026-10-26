@@ -95,10 +95,8 @@ in the `schema_migrations` table. To change the schema, add a new numbered file
 | GET | `/api/tryon?limit=` | Recent try-ons, newest first |
 | GET | `/api/admin/products` | Products with their image prompt |
 | POST | `/api/admin/products/:id/image` | Multipart form with `image`; replaces the product photo |
-| POST | `/api/admin/products/:id/image/generate` | Generates the product photo with Gemini from its prompt |
-| DELETE | `/api/admin/products/:id/image` | Switches the product back to its placeholder |
+| DELETE | `/api/admin/products/:id/image` | Switches the product back to the bundled image |
 | GET | `/api/samples` | Sample shopper photos, one per kind of photo |
-| POST | `/api/admin/samples/:subject/generate` | Generates a sample photo with Gemini |
 | POST | `/api/admin/samples/:subject` | Multipart form with `image`; replaces a sample photo |
 
 ## How a try-on works
@@ -130,16 +128,19 @@ npm run tryon -- EYE-001 ~/Pictures/me.jpg   # one try-on from the command line
 
 ## Demo images
 
-The catalog ships with placeholder product images and no sample shopper photos. Open **Demo images** in the
-top bar (http://localhost:5173/#/catalog) to fill them in:
+Product photos (`backend/assets/products`) and sample shopper photos (`backend/assets/samples`) are committed
+to the repo, so the demo works straight after `docker compose up` with no image generation at runtime. The
+try-on panel offers the matching sample photo as **Use sample**, so nobody has to upload their own photo.
 
-- **Generate missing** creates every missing image with Gemini in one go (about $0.07 each, shown on the
-  button). Each row and sample also has its own **Generate / Regenerate** button.
-- Or copy a prompt into another image tool and use **Upload** instead.
-- **Sample shopper photos** (full body, face, ears and neck, hand, room) are fictional AI-generated people and
-  a room. The try-on panel offers the matching one as **Use sample**, so a demo works without anyone uploading
-  their own photo.
+They were generated with Gemini by a one-time script, using the prompts in
+`backend/src/catalog/imagePrompts.ts` and `samplePrompts.ts`:
 
-Images are stored under `backend/uploads/` and survive restarts and re-seeds. "Use placeholder" switches a
-product back. The prompts live in `backend/src/catalog/imagePrompts.ts` and `samplePrompts.ts`. This page has
-no login and is meant for local use.
+```bash
+npm run demo-images                    # generate only images that don't exist yet
+npm run demo-images -- --force         # regenerate everything (about $1.50)
+npm run demo-images -- APP-001 hand    # regenerate specific SKUs or sample subjects
+```
+
+Commit the results under `backend/assets`. The **Demo images** page (link in the top bar) shows each prompt
+and lets you upload a replacement locally; "Use original" switches back. It has no login and is meant for
+local use.

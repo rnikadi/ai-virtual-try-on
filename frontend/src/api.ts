@@ -86,15 +86,9 @@ export const api = {
       readJson<AdminProduct>(res),
     );
   },
-  generateProductImage: (productId: string) =>
-    fetch(`/api/admin/products/${productId}/image/generate`, { method: "POST" }).then((res) =>
-      readJson<AdminProduct>(res),
-    ),
   resetProductImage: (productId: string) =>
     fetch(`/api/admin/products/${productId}/image`, { method: "DELETE" }).then((res) => readJson<AdminProduct>(res)),
   samples: () => getJson<SamplePhoto[]>("/api/samples"),
-  generateSample: (subject: RequiredPhoto) =>
-    fetch(`/api/admin/samples/${subject}/generate`, { method: "POST" }).then((res) => readJson<SamplePhoto>(res)),
   uploadSample: (subject: RequiredPhoto, image: File) => {
     const form = new FormData();
     form.append("image", image);

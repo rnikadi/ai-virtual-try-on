@@ -3,54 +3,35 @@ import { api, type SamplePhoto } from "../api";
 
 interface Props {
   sample: SamplePhoto;
-  canGenerate: boolean;
-  /** True while "Generate missing" is working on this sample. */
-  generating: boolean;
   onUpdated: (s: SamplePhoto) => void;
 }
 
-export function SamplePhotoCard({ sample, canGenerate, generating, onUpdated }: Props) {
-  const [working, setWorking] = useState<"upload" | "generate" | null>(null);
+export function SamplePhotoCard({ sample, onUpdated }: Props) {
+  const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function run(kind: "upload" | "generate", action: () => Promise<SamplePhoto>) {
-    setWorking(kind);
+  async function upload(file: File) {
+    setWorking(true);
     setError(null);
     try {
-      onUpdated(await action());
+      onUpdated(await api.uploadSample(sample.subject, file));
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setWorking(null);
+      setWorking(false);
     }
   }
-
-  const busy = working !== null || generating;
-  const isGenerating = working === "generate" || generating;
 
   return (
     <article className="sample-card">
       <div className="sample-image" title={sample.prompt}>
         {sample.imageUrl ? <img src={sample.imageUrl} alt={`${sample.label} sample`} /> : <span>No photo yet</span>}
-        {isGenerating && (
-          <span className="scan">
-            <span className="spinner" />
-            Generating…
-          </span>
-        )}
       </div>
       <h3>{sample.label}</h3>
       <div className="admin-actions">
-        <button
-          className="button small"
-          onClick={() => run("generate", () => api.generateSample(sample.subject))}
-          disabled={!canGenerate || busy}
-        >
-          {isGenerating ? "Generating…" : sample.imageUrl ? "Regenerate" : "Generate"}
-        </button>
-        <button className="button secondary small" onClick={() => inputRef.current?.click()} disabled={busy}>
-          {working === "upload" ? "Uploading…" : "Upload"}
+        <button className="button secondary small" onClick={() => inputRef.current?.click()} disabled={working}>
+          {working ? "Uploading…" : "Upload replacement"}
         </button>
       </div>
       {error && (
@@ -65,7 +46,7 @@ export function SamplePhotoCard({ sample, canGenerate, generating, onUpdated }: 
         hidden
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) run("upload", () => api.uploadSample(sample.subject, file));
+          if (file) upload(file);
           e.target.value = "";
         }}
       />
