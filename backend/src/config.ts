@@ -5,6 +5,8 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   CORS_ORIGIN: z.string().default("http://localhost:5173"),
   GEMINI_API_KEY: z.string().optional(),
+  // Optional override of the Gemini API endpoint, e.g. for a corporate proxy or a local test stub.
+  GEMINI_BASE_URL: z.string().url().optional(),
   // Model that edits the shopper's photo.
   GEMINI_IMAGE_MODEL: z.string().default("gemini-3.1-flash-image"),
   // Cheap vision model that checks the uploaded photo suits the product before we pay for an image.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, formatPrice, type Category, type Health, type Product, type TryOnSession } from "./api";
+import { api, formatPrice, type Category, type Health, type Product, type SamplePhoto, type TryOnSession } from "./api";
 import { CatalogAdmin } from "./components/CatalogAdmin";
 import { RecentTryOns } from "./components/RecentTryOns";
 import { TryOnPanel } from "./components/TryOnPanel";
@@ -12,18 +12,20 @@ export function App() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [health, setHealth] = useState<Health | null>(null);
+  const [samples, setSamples] = useState<SamplePhoto[]>([]);
   const [recent, setRecent] = useState<TryOnSession[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selected, setSelected] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([api.categories(), api.products(), api.health(), api.recentTryOns()])
-      .then(([c, p, h, r]) => {
+    Promise.all([api.categories(), api.products(), api.health(), api.recentTryOns(), api.samples()])
+      .then(([c, p, h, r, s]) => {
         setCategories(c);
         setProducts(p);
         setHealth(h);
         setRecent(r);
+        setSamples(s);
         setActiveCategory(c[0]?.id ?? null);
       })
       .catch((err: Error) => setError(err.message));
@@ -35,11 +37,17 @@ export function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  const reloadProducts = () =>
+  // Picks up images changed on the demo images page.
+  const reloadImages = () => {
     api
       .products()
       .then(setProducts)
       .catch(() => {});
+    api
+      .samples()
+      .then(setSamples)
+      .catch(() => {});
+  };
 
   const category = categories.find((c) => c.id === activeCategory);
   const visible = useMemo(() => products.filter((p) => p.categoryId === activeCategory), [products, activeCategory]);
@@ -64,7 +72,7 @@ export function App() {
         </div>
         <div className="topbar-right">
           <a className="nav-link" href={page === "catalog" ? "#/" : "#/catalog"}>
-            {page === "catalog" ? "Back to store" : "Product images"}
+            {page === "catalog" ? "Back to store" : "Demo images"}
           </a>
           {health && (
             <span className={`mode mode-${health.tryonMode}`} title={health.imageModel}>
@@ -75,7 +83,7 @@ export function App() {
       </header>
 
       {page === "catalog" ? (
-        <CatalogAdmin categories={categories} onChanged={reloadProducts} />
+        <CatalogAdmin categories={categories} canGenerate={health?.tryonMode === "gemini"} onChanged={reloadImages} />
       ) : (
         <>
           <section className="hero">
@@ -130,6 +138,7 @@ export function App() {
             {selected && (
               <TryOnPanel
                 product={selected}
+                sample={samples.find((s) => s.subject === selected.requiredPhoto)}
                 onClose={() => setSelected(null)}
                 onComplete={(s) => setRecent((r) => [s, ...r].slice(0, 8))}
               />

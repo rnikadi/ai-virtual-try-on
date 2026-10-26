@@ -7,6 +7,7 @@ import { pool } from "./db/pool.js";
 import { assetsDir, uploadsDir } from "./paths.js";
 import { catalogRouter } from "./routes/catalog.js";
 import { catalogAdminRouter } from "./routes/catalogAdmin.js";
+import { samplesRouter } from "./routes/samples.js";
 import { tryonRouter } from "./routes/tryon.js";
 
 export function createApp() {
@@ -28,6 +29,7 @@ export function createApp() {
   app.use("/api", catalogRouter);
   app.use("/api", tryonRouter);
   app.use("/api", catalogAdminRouter);
+  app.use("/api", samplesRouter);
 
   const onError: ErrorRequestHandler = (err, _req, res, _next) => {
     if (err instanceof ZodError) {

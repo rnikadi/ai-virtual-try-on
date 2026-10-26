@@ -1,26 +1,44 @@
 import { useEffect, useRef, useState } from "react";
-import { api, type AdminProduct, type Category } from "../api";
+import { api, type AdminProduct, type Category, type SamplePhoto } from "../api";
+import { SamplePhotoCard } from "./SamplePhotoCard";
 
 interface Props {
   categories: Category[];
+  /** Whether the backend has a Gemini key and can generate images. */
+  canGenerate: boolean;
   onChanged: () => void;
 }
 
-/** Shows each product's image prompt to copy into an image tool, and lets you upload the result. */
-export function CatalogAdmin({ categories, onChanged }: Props) {
+// Approximate Gemini list price for one 1K image, used for the estimate on the button.
+const COST_PER_IMAGE = 0.07;
+
+/**
+ * Generates each product's photo and the demo's sample shopper photos with Gemini,
+ * or shows the prompts so you can make and upload them yourself.
+ */
+export function CatalogAdmin({ categories, canGenerate, onChanged }: Props) {
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [samples, setSamples] = useState<SamplePhoto[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [bulk, setBulk] = useState<{ activeId: string; done: number; total: number } | null>(null);
 
   useEffect(() => {
-    api
-      .adminProducts()
-      .then(setProducts)
+    Promise.all([api.adminProducts(), api.samples()])
+      .then(([p, s]) => {
+        setProducts(p);
+        setSamples(s);
+      })
       .catch((err: Error) => setError(err.message));
   }, []);
 
   function replace(updated: AdminProduct) {
     setProducts((list) => list.map((p) => (p.id === updated.id ? updated : p)));
+    onChanged();
+  }
+
+  function replaceSample(updated: SamplePhoto) {
+    setSamples((list) => list.map((s) => (s.subject === updated.subject ? updated : s)));
     onChanged();
   }
 
@@ -31,21 +49,62 @@ export function CatalogAdmin({ categories, onChanged }: Props) {
     setTimeout(() => setCopiedAll(false), 2000);
   }
 
+  // Generates every missing sample photo and product image, one at a time, saving each as it arrives.
+  async function generateAll() {
+    const todo = [
+      ...samples
+        .filter((s) => !s.imageUrl)
+        .map((s) => ({
+          key: s.subject,
+          name: `${s.label} sample`,
+          run: () => api.generateSample(s.subject).then(replaceSample),
+        })),
+      ...products
+        .filter((p) => !p.hasUploadedImage)
+        .map((p) => ({ key: p.id, name: p.sku, run: () => api.generateProductImage(p.id).then(replace) })),
+    ];
+    const failed: string[] = [];
+    setError(null);
+    for (const [i, item] of todo.entries()) {
+      setBulk({ activeId: item.key, done: i, total: todo.length });
+      try {
+        await item.run();
+      } catch {
+        failed.push(item.name);
+      }
+    }
+    setBulk(null);
+    if (failed.length) setError(`Could not generate ${failed.join(", ")}. Use Regenerate on those to retry.`);
+  }
+
   const uploaded = products.filter((p) => p.hasUploadedImage).length;
+  const remaining = products.length - uploaded + samples.filter((s) => !s.imageUrl).length;
 
   return (
     <section className="admin">
       <div className="admin-head">
         <div>
-          <h1>Product images</h1>
+          <h1>Demo images</h1>
           <p>
-            Copy a prompt into your image tool (for example the Gemini app), then upload the image here. Square
-            images on a plain background work best for try-on. {uploaded} of {products.length} uploaded.
+            Generate the sample shopper photos and product photos with Gemini from the prompts shown, or make them
+            elsewhere and upload them. {uploaded} of {products.length} products done.
           </p>
+          {!canGenerate && (
+            <p className="hint">Add GEMINI_API_KEY to .env and restart the backend to enable generation.</p>
+          )}
         </div>
-        <button className="button secondary" onClick={copyAll} disabled={products.length === 0}>
-          {copiedAll ? "Copied" : "Copy all prompts"}
-        </button>
+        <div className="admin-head-actions">
+          <button className="button secondary" onClick={copyAll} disabled={products.length === 0}>
+            {copiedAll ? "Copied" : "Copy all prompts"}
+          </button>
+          <button className="button" onClick={generateAll} disabled={!canGenerate || remaining === 0 || bulk !== null}>
+            {bulk
+              ? `Generating ${bulk.done + 1} of ${bulk.total}…`
+              : remaining === 0
+                ? "All images done"
+                : `Generate ${remaining} missing (~$${(remaining * COST_PER_IMAGE).toFixed(2)})`}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -54,6 +113,25 @@ export function CatalogAdmin({ categories, onChanged }: Props) {
         </p>
       )}
 
+      <div className="admin-group">
+        <h2>Sample shopper photos</h2>
+        <p className="admin-note">
+          Offered in the try-on panel for shoppers who don't want to upload their own photo. These are fictional people
+          generated by AI.
+        </p>
+        <div className="sample-grid">
+          {samples.map((s) => (
+            <SamplePhotoCard
+              key={s.subject}
+              sample={s}
+              canGenerate={canGenerate && bulk === null}
+              generating={bulk?.activeId === s.subject}
+              onUpdated={replaceSample}
+            />
+          ))}
+        </div>
+      </div>
+
       {categories.map((c) => {
         const items = products.filter((p) => p.categoryId === c.id);
         if (items.length === 0) return null;
@@ -61,7 +139,13 @@ export function CatalogAdmin({ categories, onChanged }: Props) {
           <div key={c.id} className="admin-group">
             <h2>{c.name}</h2>
             {items.map((p) => (
-              <ProductImageRow key={p.id} product={p} onUpdated={replace} />
+              <ProductImageRow
+                key={p.id}
+                product={p}
+                canGenerate={canGenerate && bulk === null}
+                generating={bulk?.activeId === p.id}
+                onUpdated={replace}
+              />
             ))}
           </div>
         );
@@ -70,8 +154,16 @@ export function CatalogAdmin({ categories, onChanged }: Props) {
   );
 }
 
-function ProductImageRow({ product, onUpdated }: { product: AdminProduct; onUpdated: (p: AdminProduct) => void }) {
-  const [busy, setBusy] = useState(false);
+interface RowProps {
+  product: AdminProduct;
+  canGenerate: boolean;
+  /** True while "Generate missing" is working on this row. */
+  generating: boolean;
+  onUpdated: (p: AdminProduct) => void;
+}
+
+function ProductImageRow({ product, canGenerate, generating, onUpdated }: RowProps) {
+  const [working, setWorking] = useState<"upload" | "generate" | "reset" | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,28 +178,23 @@ function ProductImageRow({ product, onUpdated }: { product: AdminProduct; onUpda
       setError("That image is over 10 MB.");
       return;
     }
-    setBusy(true);
+    await run("upload", () => api.uploadProductImage(product.id, file));
+  }
+
+  async function run(kind: "upload" | "generate" | "reset", action: () => Promise<AdminProduct>) {
+    setWorking(kind);
     setError(null);
     try {
-      onUpdated(await api.uploadProductImage(product.id, file));
+      onUpdated(await action());
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setBusy(false);
+      setWorking(null);
     }
   }
 
-  async function reset() {
-    setBusy(true);
-    setError(null);
-    try {
-      onUpdated(await api.resetProductImage(product.id));
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const busy = working !== null || generating;
+  const isGenerating = working === "generate" || generating;
 
   async function copy() {
     await navigator.clipboard.writeText(product.imagePrompt);
@@ -131,8 +218,14 @@ function ProductImageRow({ product, onUpdated }: { product: AdminProduct; onUpda
       >
         <img src={product.imageUrl} alt="" />
         <span className={`badge ${product.hasUploadedImage ? "ok" : "todo"}`}>
-          {product.hasUploadedImage ? "Uploaded" : "Placeholder"}
+          {product.hasUploadedImage ? "Ready" : "Placeholder"}
         </span>
+        {isGenerating && (
+          <span className="scan">
+            <span className="spinner" />
+            Generating…
+          </span>
+        )}
       </button>
 
       <div className="admin-body">
@@ -145,11 +238,22 @@ function ProductImageRow({ product, onUpdated }: { product: AdminProduct; onUpda
           <button className="button secondary small" onClick={copy}>
             {copied ? "Copied" : "Copy prompt"}
           </button>
-          <button className="button small" onClick={() => inputRef.current?.click()} disabled={busy}>
-            {busy ? "Uploading…" : product.hasUploadedImage ? "Replace image" : "Upload image"}
+          <button
+            className="button small"
+            onClick={() => run("generate", () => api.generateProductImage(product.id))}
+            disabled={!canGenerate || busy}
+          >
+            {isGenerating ? "Generating…" : product.hasUploadedImage ? "Regenerate" : "Generate"}
+          </button>
+          <button className="button secondary small" onClick={() => inputRef.current?.click()} disabled={busy}>
+            {working === "upload" ? "Uploading…" : "Upload image"}
           </button>
           {product.hasUploadedImage && (
-            <button className="link-button" onClick={reset} disabled={busy}>
+            <button
+              className="link-button"
+              onClick={() => run("reset", () => api.resetProductImage(product.id))}
+              disabled={busy}
+            >
               Use placeholder
             </button>
           )}

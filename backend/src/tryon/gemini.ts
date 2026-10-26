@@ -5,7 +5,10 @@ let client: GoogleGenAI | undefined;
 
 export function gemini(): GoogleGenAI {
   if (!config.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
-  client ??= new GoogleGenAI({ apiKey: config.GEMINI_API_KEY });
+  client ??= new GoogleGenAI({
+    apiKey: config.GEMINI_API_KEY,
+    httpOptions: config.GEMINI_BASE_URL ? { baseUrl: config.GEMINI_BASE_URL } : undefined,
+  });
   return client;
 }
 

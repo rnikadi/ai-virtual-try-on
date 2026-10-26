@@ -95,7 +95,11 @@ in the `schema_migrations` table. To change the schema, add a new numbered file
 | GET | `/api/tryon?limit=` | Recent try-ons, newest first |
 | GET | `/api/admin/products` | Products with their image prompt |
 | POST | `/api/admin/products/:id/image` | Multipart form with `image`; replaces the product photo |
+| POST | `/api/admin/products/:id/image/generate` | Generates the product photo with Gemini from its prompt |
 | DELETE | `/api/admin/products/:id/image` | Switches the product back to its placeholder |
+| GET | `/api/samples` | Sample shopper photos, one per kind of photo |
+| POST | `/api/admin/samples/:subject/generate` | Generates a sample photo with Gemini |
+| POST | `/api/admin/samples/:subject` | Multipart form with `image`; replaces a sample photo |
 
 ## How a try-on works
 
@@ -124,14 +128,18 @@ npm run tryon -- EYE-001 ~/Pictures/me.jpg   # one try-on from the command line
 - [x] Step 3: Stakeholder demo UI (category tabs, per-product photo guidance, before/after slider, recent try-ons)
 - [ ] Step 4: Demo polish: [demo guide and cost notes](docs/DEMO.md) written; prompt tuning against real photos once a Gemini key is set
 
-## Product images
+## Demo images
 
-The catalog ships with placeholder images. Try-on quality depends on real product photos, so replace them
-on the **Product images** page (link in the top bar, or http://localhost:5173/#/catalog):
+The catalog ships with placeholder product images and no sample shopper photos. Open **Demo images** in the
+top bar (http://localhost:5173/#/catalog) to fill them in:
 
-1. Copy a product's prompt (or "Copy all prompts") into your image tool, such as the Gemini app.
-2. Upload the image you get back on the same row, or drag it onto the image.
+- **Generate missing** creates every missing image with Gemini in one go (about $0.07 each, shown on the
+  button). Each row and sample also has its own **Generate / Regenerate** button.
+- Or copy a prompt into another image tool and use **Upload** instead.
+- **Sample shopper photos** (full body, face, ears and neck, hand, room) are fictional AI-generated people and
+  a room. The try-on panel offers the matching one as **Use sample**, so a demo works without anyone uploading
+  their own photo.
 
-Uploads are resized to at most 1024 px and stored under `backend/uploads/products`. Re-running the seed
-keeps them. "Use placeholder" switches a product back. The prompts live in
-`backend/src/catalog/imagePrompts.ts`. This page has no login and is meant for local use.
+Images are stored under `backend/uploads/` and survive restarts and re-seeds. "Use placeholder" switches a
+product back. The prompts live in `backend/src/catalog/imagePrompts.ts` and `samplePrompts.ts`. This page has
+no login and is meant for local use.

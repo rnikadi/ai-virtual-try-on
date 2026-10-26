@@ -50,6 +50,13 @@ export interface AdminProduct {
   hasUploadedImage: boolean;
 }
 
+export interface SamplePhoto {
+  subject: RequiredPhoto;
+  label: string;
+  prompt: string;
+  imageUrl: string | null;
+}
+
 export interface Health {
   status: string;
   tryonMode: "gemini" | "mock";
@@ -79,8 +86,29 @@ export const api = {
       readJson<AdminProduct>(res),
     );
   },
+  generateProductImage: (productId: string) =>
+    fetch(`/api/admin/products/${productId}/image/generate`, { method: "POST" }).then((res) =>
+      readJson<AdminProduct>(res),
+    ),
   resetProductImage: (productId: string) =>
     fetch(`/api/admin/products/${productId}/image`, { method: "DELETE" }).then((res) => readJson<AdminProduct>(res)),
+  samples: () => getJson<SamplePhoto[]>("/api/samples"),
+  generateSample: (subject: RequiredPhoto) =>
+    fetch(`/api/admin/samples/${subject}/generate`, { method: "POST" }).then((res) => readJson<SamplePhoto>(res)),
+  uploadSample: (subject: RequiredPhoto, image: File) => {
+    const form = new FormData();
+    form.append("image", image);
+    return fetch(`/api/admin/samples/${subject}`, { method: "POST", body: form }).then((res) =>
+      readJson<SamplePhoto>(res),
+    );
+  },
+  /** Downloads an image from the API as a File, so a sample photo goes through the same flow as an upload. */
+  fetchAsFile: async (url: string, name: string) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Could not load ${url}`);
+    const blob = await res.blob();
+    return new File([blob], name, { type: blob.type || "image/jpeg" });
+  },
   /** Resolves with the session for both successful and failed try-ons. */
   tryOn: (productId: string, photo: File) => {
     const form = new FormData();

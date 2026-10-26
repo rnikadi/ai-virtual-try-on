@@ -123,6 +123,8 @@ p { margin: 0; }
 .admin-head { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: end; margin-bottom: 24px; }
 .admin-head h1 { font-size: 28px; }
 .admin-head p { color: var(--muted); margin-top: 6px; max-width: 640px; }
+.admin-head .hint { color: var(--warn); }
+.admin-head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-group { margin-bottom: 32px; }
 .admin-group h2 { font-size: 18px; margin-bottom: 12px; }
 .admin-row { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; }
@@ -145,3 +147,16 @@ p { margin: 0; }
   .admin-row { grid-template-columns: 1fr; }
   .admin-image { width: 160px; }
 }
+
+.admin-note { color: var(--muted); font-size: 14px; margin: -4px 0 12px; }
+.sample-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.sample-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; display: grid; gap: 8px; align-content: start; }
+.sample-card h3 { font-size: 14px; }
+.sample-card .error { margin-top: 0; }
+.sample-image { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: #f1eee9; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+.sample-image img { width: 100%; height: 100%; object-fit: cover; }
+
+.sample-offer { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.sample-offer img { width: 48px; height: 60px; object-fit: cover; border-radius: 6px; }
+.sample-offer p { flex: 1; font-size: 14px; color: var(--muted); }
+.sample-offer .button.small { margin-top: 0; }

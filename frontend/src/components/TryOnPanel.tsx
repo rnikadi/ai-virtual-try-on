@@ -1,17 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { api, formatPrice, type Product, type TryOnSession } from "../api";
+import { api, formatPrice, type Product, type SamplePhoto, type TryOnSession } from "../api";
 import { photoGuides } from "../photoGuides";
 import { BeforeAfter } from "./BeforeAfter";
 
 interface Props {
   product: Product;
+  /** A ready-made photo of the kind this product needs, for shoppers who don't want to upload one. */
+  sample?: SamplePhoto;
   onClose: () => void;
   onComplete: (session: TryOnSession) => void;
 }
 
-const PROGRESS_STEPS = ["Checking your photo", "Fitting the product", "Matching light and shadows", "Finishing touches"];
+const PROGRESS_STEPS = [
+  "Checking your photo",
+  "Fitting the product",
+  "Matching light and shadows",
+  "Finishing touches",
+];
 
-export function TryOnPanel({ product, onClose, onComplete }: Props) {
+export function TryOnPanel({ product, sample, onClose, onComplete }: Props) {
   const [photo, setPhoto] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -58,6 +65,15 @@ export function TryOnPanel({ product, onClose, onComplete }: Props) {
     setPhoto(file);
     setSession(null);
     setError(null);
+  }
+
+  async function useSample() {
+    if (!sample?.imageUrl) return;
+    try {
+      choose(await api.fetchAsFile(sample.imageUrl, `${sample.subject}-sample.jpg`));
+    } catch (err) {
+      setError((err as Error).message);
+    }
   }
 
   async function run() {
@@ -158,6 +174,16 @@ export function TryOnPanel({ product, onClose, onComplete }: Props) {
               e.target.value = "";
             }}
           />
+
+          {sample?.imageUrl && (
+            <div className="sample-offer">
+              <img src={sample.imageUrl} alt="" />
+              <p>No photo handy? Try it on our sample model.</p>
+              <button className="button secondary small" onClick={useSample} disabled={running}>
+                Use sample
+              </button>
+            </div>
+          )}
 
           {error && (
             <p className="error" role="alert">

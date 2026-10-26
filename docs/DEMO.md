@@ -4,9 +4,10 @@
 
 1. Put your key in `.env` (`GEMINI_API_KEY=...`) and restart the backend. The badge in the top right
    should read **Live · gemini-3.1-flash-image**, not "Mock mode".
-2. Open **Product images** in the top bar, generate a photo for each product from its prompt, and upload it,
-   so the catalog shows realistic products instead of placeholders.
-3. Prepare one photo per kind of try-on and do a dry run with each, so results are cached in "Recent try-ons":
+2. Open **Demo images** in the top bar and click **Generate missing** (about $1.40 for everything). Check the
+   results and regenerate any that look off.
+3. Do a dry run in each category with **Use sample**, so results show in "Recent try-ons". If you'd rather use
+   real people, prepare one photo per kind of try-on instead:
    - a full-body photo (clothing)
    - a front-facing face photo (glasses, makeup)
    - a head-and-shoulders photo with ears visible (earrings, necklace)
