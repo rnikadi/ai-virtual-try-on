@@ -2,7 +2,10 @@
   "name": "ai-virtual-try-on",
   "private": true,
   "description": "Virtual try-on POC for e-commerce, powered by the Gemini API",
-  "workspaces": ["backend", "frontend"],
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
@@ -11,6 +14,8 @@
     "db:reset": "npm run reset --workspace backend",
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "tryon": "npm run tryon --workspace backend --",
+    "catalog:images": "npm run catalog:images --workspace backend --"
   }
 }

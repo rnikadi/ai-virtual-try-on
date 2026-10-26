@@ -21,7 +21,7 @@ Each category needs a different kind of photo, and gets its own prompt and valid
 - `frontend/`: React + TypeScript (Vite)
 - `backend/`: Node + Express + TypeScript
 - `db/`: PostgreSQL migration scripts (`db/migrations`) and seed data (`db/seeds`)
-- Gemini API for image generation (wired in from step 2)
+- Gemini API: `gemini-3.1-flash-image` edits the photo, `gemini-3.1-flash-lite` pre-checks it (both configurable in `.env`)
 
 ## Getting started
 
@@ -53,13 +53,38 @@ in the `schema_migrations` table. To change the schema, add a new numbered file
 | GET | `/api/categories` | Try-on categories with photo guidance |
 | GET | `/api/products?category=` | Products, optionally filtered by category |
 | GET | `/api/products/:id` | One product |
+| POST | `/api/tryon` | Multipart form with `productId` and `photo`; runs a try-on and returns the session (201 on success, 422 with `errorMessage` on failure) |
+| GET | `/api/tryon/:id` | One try-on session |
+| GET | `/api/tryon?limit=` | Recent try-ons, newest first |
+
+## How a try-on works
+
+1. The uploaded photo is auto-rotated, resized to at most 1536 px and saved under `backend/uploads/inputs`.
+2. A cheap vision model checks the photo shows what this product needs (full body, face, ears and neck,
+   hand or room). A wrong photo gets a helpful message, and no image is generated or paid for.
+3. A category-specific prompt (`backend/src/tryon/prompts.ts`) is sent to the Gemini image model with
+   the shopper's photo and the product photo. The output keeps the photo's aspect ratio.
+4. The result is saved under `backend/uploads/results`, and the session row records the status,
+   model, prompt and latency.
+
+Without a `GEMINI_API_KEY` the backend runs in **mock mode**: it overlays the product thumbnail on the
+photo with a "mock preview" label, so the UI can be built and demoed end to end. `/api/health` shows
+which mode is active.
+
+### Useful scripts
+
+```bash
+npm run tryon -- EYE-001 ~/Pictures/me.jpg   # one try-on from the command line
+npm run catalog:images                       # replace placeholder product images with Gemini-generated photos
+npm run catalog:images -- APP-001 HOM-002    # ...or just some products
+```
 
 ## Status
 
 - [x] Step 1: Foundation (repo layout, Postgres, migrations, seed catalog)
-- [ ] Step 2: Try-on engine (Gemini endpoint, per-category prompts)
+- [x] Step 2: Try-on engine (Gemini endpoint, per-category prompts, photo check, mock mode)
 - [ ] Step 3: Stakeholder demo UI
 - [ ] Step 4: Demo polish (errors, cost and latency notes, demo script)
 
-Product images in `backend/assets/products` are placeholders and will be replaced with
-realistic product photos, which the try-on quality depends on.
+Product images in `backend/assets/products` are placeholders. Try-on quality depends on them, so run
+`npm run catalog:images` once a Gemini key is set, or drop in real product photos with the same file names.
