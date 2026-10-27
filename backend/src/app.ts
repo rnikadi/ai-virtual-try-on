@@ -22,6 +22,7 @@ export function createApp() {
     res.json({
       status: "ok",
       tryonMode: useGemini ? "gemini" : "mock",
+      provider: useGemini ? config.GEMINI_PROVIDER : null,
       imageModel: useGemini ? config.GEMINI_IMAGE_MODEL : "mock",
     });
   });

@@ -76,7 +76,9 @@ export function App() {
           </a>
           {health && (
             <span className={`mode mode-${health.tryonMode}`} title={health.imageModel}>
-              {health.tryonMode === "gemini" ? `Live · ${health.imageModel}` : "Mock mode · no Gemini key"}
+              {health.tryonMode === "gemini"
+                ? `Live · ${health.provider === "vertex" ? "Vertex AI · " : ""}${health.imageModel}`
+                : "Mock mode · no Gemini key"}
             </span>
           )}
         </div>

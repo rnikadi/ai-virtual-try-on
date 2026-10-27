@@ -7,6 +7,8 @@ export function gemini(): GoogleGenAI {
   if (!config.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not set");
   client ??= new GoogleGenAI({
     apiKey: config.GEMINI_API_KEY,
+    // With an API key and no project or location, the SDK uses Vertex AI express mode.
+    enterprise: config.GEMINI_PROVIDER === "vertex",
     httpOptions: config.GEMINI_BASE_URL ? { baseUrl: config.GEMINI_BASE_URL } : undefined,
   });
   return client;

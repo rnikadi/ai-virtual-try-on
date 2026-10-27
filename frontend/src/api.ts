@@ -60,6 +60,7 @@ export interface SamplePhoto {
 export interface Health {
   status: string;
   tryonMode: "gemini" | "mock";
+  provider: "gemini-api" | "vertex" | null;
   imageModel: string;
 }
 

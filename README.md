@@ -99,6 +99,20 @@ in the `schema_migrations` table. To change the schema, add a new numbered file
 | GET | `/api/samples` | Sample shopper photos, one per kind of photo |
 | POST | `/api/admin/samples/:subject` | Multipart form with `image`; replaces a sample photo |
 
+## Gemini API or Vertex AI
+
+The backend can reach Gemini two ways, chosen in `.env`:
+
+| `GEMINI_PROVIDER` | `GEMINI_API_KEY` | Billing |
+| --- | --- | --- |
+| `gemini-api` (default) | Key from [Google AI Studio](https://aistudio.google.com/apikey) | Gemini API |
+| `vertex` | Vertex AI API key (Vertex AI express mode) | Your Google Cloud project |
+
+For Vertex AI, enable the Vertex AI API in your Google Cloud project and create an API key for it
+(Google Cloud console > APIs & Services > Credentials, restricted to the Vertex AI API). An AI Studio key
+does not work against Vertex AI. Restart the backend after changing `.env`; the badge in the top bar shows
+"Vertex AI" when it is in use.
+
 ## How a try-on works
 
 1. The uploaded photo is auto-rotated, resized to at most 1536 px and saved under `backend/uploads/inputs`.
